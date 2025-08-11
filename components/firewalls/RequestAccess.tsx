@@ -144,11 +144,11 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
   const handleChange = (
     index: number,
     field: keyof FirewallSelection,
-    value: any
+    value: string | boolean
   ) => {
-    const updated = [...selections];
-    // @ts-ignore
-    updated[index][field] = value;
+  const updated = [...selections];
+  // @ts-expect-error: dynamic key assignment to FirewallSelection type
+  updated[index][field] = value;
 
     if (field === "selected" && value === true) {
       setPublicIp(updated[index].publicIp);
@@ -169,10 +169,10 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     onSubmit(selected);
 
     selected.forEach((sel) => {
-      handleProcessInstance(sel.id, sel.publicIp, true);
+      handleProcessInstance(sel.id, sel.publicIp);
       console.log(
         "processinstance",
-        handleProcessInstance(sel.id, sel.publicIp, true)
+        handleProcessInstance(sel.id, sel.publicIp)
       );
     });
     router.push("/firewalls/requests");
