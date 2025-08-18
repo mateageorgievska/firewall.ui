@@ -1,6 +1,7 @@
 import NextAuth from "next-auth/next";
 import AzureADProvider, { AzureADProfile } from "next-auth/providers/azure-ad";
 import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 import { ENV } from "../../../env";
 
 export default NextAuth({
@@ -11,25 +12,28 @@ export default NextAuth({
       tenantId: ENV.AZURE_AD_TENANT_ID,
       authorization: {
         params: {
-          scope:
-            "openid profile email offline_access https://graph.microsoft.com/User.Read",
+          scope: "openid profile email",
         },
       },
     }),
   ],
+  secret: ENV.NEXTAUTH_SECRET,
+  debug: false,
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 1 day
+  },
   callbacks: {
     async jwt({ token, user, account, profile }) {
       if (account && user) {
-        token.accessToken = account.access_token;
         const azureAdId = (profile as AzureADProfile)?.oid || "";
         token.azureAdId = azureAdId;
         token.email = user.email;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: JWT }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (typeof token.azureAdId === "string") {
-        session.accessToken = token.accessToken;
         session.user.azureAdId = token.azureAdId;
       }
        return session;

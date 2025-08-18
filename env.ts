@@ -7,6 +7,7 @@ declare global {
 interface EnvironmentVariables {
 	NEXT_PUBLIC_LOGOUT: string
 	NEXTAUTH_URL: string
+	NEXTAUTH_SECRET: string
     NEXT_PUBLIC_API_ENDPOINT: string
 	NEXT_PUBLIC_BPMNSERVICE_URL: string
     NEXT_PUBLIC_GET_FIREWALLS: string
@@ -30,6 +31,7 @@ interface EnvironmentVariables {
 const defaultBuildValues: EnvironmentVariables = {
 	NEXT_PUBLIC_LOGOUT: process.env.NEXT_PUBLIC_LOGOUT ?? '',
 	NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? '',
+	NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ?? '',
 	NEXT_PUBLIC_API_ENDPOINT: process.env.NEXT_PUBLIC_API_ENDPOINT ?? '',
 	NEXT_PUBLIC_BPMNSERVICE_URL: process.env.NEXT_PUBLIC_BPMNSERVICE_URL ?? '',
     NEXT_PUBLIC_GET_FIREWALLS: process.env.NEXT_PUBLIC_GET_FIREWALLS ?? '',

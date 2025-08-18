@@ -44,7 +44,7 @@ const Requests: React.FC = observer(() => {
 
   const onSearch = () => {
     setFilters({
-      requestStatusId: selectedRequestStatus?.value ?? undefined,
+      requestStatusId: selectedRequestStatus?.value ? Number(selectedRequestStatus.value) : undefined,
     });
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };

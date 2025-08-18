@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { action, flow, makeObservable, observable } from "mobx";
 import {
   FirewallDTO,
@@ -20,9 +22,26 @@ import { signOut } from "next-auth/react";
 import { ProcessInstanceDTO, UserTaskDTO } from "@/interfaces/General";
 import qs from "qs";
 
+interface AxiosError extends Error {
+  response?: {
+    data: string;
+    status: number;
+  };
+}
+
+interface PaginationPayload {
+  page?: {
+    pageSize: number;
+    pageNumber: number;
+  };
+  filters?: {
+    requestStatusId?: number;
+  };
+}
+
 export interface OptionType {
   label: string;
-  value: any;
+  value: string | number | boolean;
 }
 
 const statusMap: Record<number, string> = {
@@ -41,12 +60,12 @@ export class GeneralStore {
     totalRecords: 0,
   };
   processInstance: ProcessInstanceDTO | null = null;
-  processInstances: any[] = [];
+  processInstances: ProcessInstanceDTO[] = [];
   task: UserTaskDTO | null = null;
   requestStatuses: OptionType[] = [];
   selectedRequestStatus: OptionType | null = null;
   selectedRequests: OptionType | null = null;
-  errors: any = null;
+  errors: string | null = null;
   loadingRequests: boolean = false;
   loadingFirewalls: boolean = false;
   loadingUser: boolean = false;
@@ -55,8 +74,8 @@ export class GeneralStore {
   loadingUserTask: boolean = false;
   isSubmitting: boolean = false;
   approvalTaskId: string | null = null;
-  firstUserTaskId: any;
-  processInfo: any;
+  firstUserTaskId: string | null = null;
+  processInfo: Record<string, unknown> | null = null;
 
   constructor() {
     makeObservable(this, {
@@ -107,7 +126,7 @@ export class GeneralStore {
   onSetRequest = (data: RequestDTO) => {
     this.request = data;
   };
-  onSetErrors = (data: any) => {
+  onSetErrors = (data: string | null) => {
     this.errors = data;
   };
   onSetUser = (data: UserDTO) => {
@@ -168,7 +187,7 @@ export class GeneralStore {
       const existingRules = getResp.data.firewall.rules || [];
 
       const newRules = existingRules.filter(
-        (rule: any) => !rule.source_ips.includes(`${publicIp}/32`)
+        (rule: { source_ips: string[] }) => !rule.source_ips.includes(`${publicIp}/32`)
       );
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
@@ -180,11 +199,14 @@ export class GeneralStore {
       } else {
         this.onSetErrors("Failed to remove firewall rules");
       }
-    } catch (err: any) {
-      if (err.response?.data) {
-        this.onSetErrors(err.response.data);
-      } else {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as AxiosError;
+        this.onSetErrors(axiosErr.response?.data || 'Unknown error occurred');
+      } else if (err instanceof Error) {
         this.onSetErrors(err.message || "Unknown error occurred");
+      } else {
+        this.onSetErrors("Unknown error occurred");
       }
     }
   }
@@ -218,11 +240,14 @@ export class GeneralStore {
       } else {
         this.onSetErrors("Failed to submit firewall rules");
       }
-    } catch (err: any) {
-      if (err.response?.data) {
-        this.onSetErrors(err.response.data);
-      } else {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as AxiosError;
+        this.onSetErrors(axiosErr.response?.data || 'Unknown error occurred');
+      } else if (err instanceof Error) {
         this.onSetErrors(err.message || "Unknown error occurred");
+      } else {
+        this.onSetErrors("Unknown error occurred");
       }
     }
   }
@@ -299,7 +324,7 @@ export class GeneralStore {
     }
   }
 
-  *getProcessInstances(payload: any) {
+  *getProcessInstances(payload: Record<string, unknown>) {
     try {
       this.onSetErrors(null);
       this.loadingProcessInstances = true;
@@ -370,7 +395,7 @@ export class GeneralStore {
     }
   }
 
-  *getRequests(payload: any) {
+  *getRequests(payload: PaginationPayload) {
     try {
       this.onSetErrors(null);
       this.loadingRequests = true;
@@ -415,7 +440,7 @@ export class GeneralStore {
     }
   }
 
-  *getFirewalls(payload: any) {
+  *getFirewalls() {
     try {
       this.onSetErrors(null);
       this.loadingFirewalls = true;
@@ -522,6 +547,23 @@ export class GeneralStore {
           } catch (error) {}
           //clearStorage();
           signOut();
+        } else if (err.response.status === 404) {
+          // User not found, create a new user
+          try {
+            this.loadingUser = true;
+            const createResponse: AxiosResponse = yield callApiPost(
+              ENV.NEXT_PUBLIC_CREATE_USER,
+              { userDto: { azureAdId } }
+            );
+            
+            if (createResponse.status === 200 || createResponse.status === 201) {
+              this.loadingUser = false;
+              this.user = createResponse.data;
+            }
+          } catch (createErr: any) {
+            this.loadingUser = false;
+            this.onSetErrors(createErr.response?.data || createErr.message);
+          }
         } else {
           this.onSetErrors(err.response.data);
         }

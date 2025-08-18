@@ -17,7 +17,7 @@ const RequestAccessPage: React.FC<Props> = observer(({ intl }) => {
   };
 
   useEffect(() => {
-    generalStore.getFirewalls({});
+    generalStore.getFirewalls();
   }, []);
 
   return (

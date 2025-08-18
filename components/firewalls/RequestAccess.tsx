@@ -64,9 +64,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       let matchedDetailedInstance = null;
 
       for (const instance of generalStore.processInstances) {
-        console.log("[handleProcessInstance] Checking instance:", instance._id);
+        console.log("[handleProcessInstance] Checking instance:", instance.instanceId);
 
-        await generalStore.getProcessInstanceById(instance._id);
+        await generalStore.getProcessInstanceById(instance.instanceId);
         const detailedInstance = generalStore.processInstance;
 
         console.log(detailedInstance);
@@ -74,7 +74,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
         if (!detailedInstance) {
           console.warn(
             "[handleProcessInstance] No detailed instance returned for:",
-            instance._id
+            instance.instanceId
           );
           continue;
         }
@@ -96,7 +96,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
           instancePublicIp === undefined
         ) {
           console.warn(
-            `[handleProcessInstance] Missing firewallId or publicIp in instance ${instance._id}`
+            `[handleProcessInstance] Missing firewallId or publicIp in instance ${instance.instanceId}`
           );
           continue;
         }
