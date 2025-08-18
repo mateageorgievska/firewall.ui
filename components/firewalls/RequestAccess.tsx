@@ -52,30 +52,18 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
 
   const handleProcessInstance = async (
     firewallId: number,
-    publicIp: string,
+    publicIp: string
   ) => {
     try {
       await generalStore.getProcessInstances(payloadProcessInstance);
-      console.log(
-        "[handleProcessInstance] Process instances:",
-        generalStore.processInstances
-      );
 
       let matchedDetailedInstance = null;
 
       for (const instance of generalStore.processInstances) {
-        console.log("[handleProcessInstance] Checking instance:", instance._id);
-
         await generalStore.getProcessInstanceById(instance._id);
         const detailedInstance = generalStore.processInstance;
 
-        console.log(detailedInstance);
-
         if (!detailedInstance) {
-          console.warn(
-            "[handleProcessInstance] No detailed instance returned for:",
-            instance._id
-          );
           continue;
         }
 
@@ -86,25 +74,13 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
         const instancePublicIp =
           wfData.firewall?.data?.publicIp ?? wfData?.publicIp?.data;
 
-        console.log("[handleProcessInstance] Comparing", {
-          instanceFirewallId,
-          instancePublicIp,
-        });
-
         if (
           instanceFirewallId === undefined ||
-          instancePublicIp === undefined
+          instancePublicIp === undefined ||
+          wfData === undefined
         ) {
-          console.warn(
-            `[handleProcessInstance] Missing firewallId or publicIp in instance ${instance._id}`
-          );
           continue;
-        }
-
-        if (
-          instanceFirewallId === firewallId &&
-          instancePublicIp === publicIp
-        ) {
+        } else {
           matchedDetailedInstance = detailedInstance;
           break;
         }
@@ -162,18 +138,11 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     const selected = selections
       .filter((s) => s.selected && s.publicIp)
       .map((s) => ({ ...s }));
-
-    //handleProcessInstance(true);
-    console.log("Submitting selected firewalls:", selected);
-
     onSubmit(selected);
 
     selected.forEach((sel) => {
-      handleProcessInstance(sel.id, sel.publicIp, true);
-      console.log(
-        "processinstance",
-        handleProcessInstance(sel.id, sel.publicIp, true)
-      );
+      //handleProcessInstance(sel.id, sel.publicIp, true);
+      handleProcessInstance(sel.id, sel.publicIp);
     });
     router.push("/firewalls/requests");
   };

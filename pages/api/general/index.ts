@@ -5,7 +5,7 @@ import {
   RequestDTO,
   UserDTO,
 } from "@/interfaces/Firewall";
-import { AxiosResponse } from "axios";
+import { AxiosError, AxiosResponse } from "axios";
 import { ENV } from "@/env";
 import {
   callApiBpmnServiceGet,
@@ -168,7 +168,8 @@ export class GeneralStore {
       const existingRules = getResp.data.firewall.rules || [];
 
       const newRules = existingRules.filter(
-        (rule: any) => !rule.source_ips.includes(`${publicIp}/32`)
+        (rule: { source_ips: string[] }) =>
+          !rule.source_ips.includes(`${publicIp}/32`)
       );
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
@@ -180,10 +181,11 @@ export class GeneralStore {
       } else {
         this.onSetErrors("Failed to remove firewall rules");
       }
-    } catch (err: any) {
-      if (err.response?.data) {
-        this.onSetErrors(err.response.data);
-      } else {
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as AxiosError;
+        this.onSetErrors(axiosErr.response?.data || "Unknown error occurred");
+      } else if (err instanceof Error) {
         this.onSetErrors(err.message || "Unknown error occurred");
       }
     }
@@ -196,6 +198,7 @@ export class GeneralStore {
         `${firewallId}`
       );
       const existingRules = getResp.data.firewall.rules || [];
+
       const newRule = {
         direction: "in",
         source_ips: [`${publicIp}/32`],
@@ -203,7 +206,26 @@ export class GeneralStore {
         port: "80",
         description: "Temporary access to firewall",
       };
-      const updatedRules = [...existingRules, newRule];
+
+      const isSameRule = (a: any, b: any) => {
+        return (
+          a.direction === b.direction &&
+          a.protocol === b.protocol &&
+          a.port === b.port &&
+          // source_ips
+          JSON.stringify(a.source_ips || []) ===
+            JSON.stringify(b.source_ips || []) &&
+          // destination_ips
+          JSON.stringify(a.destination_ips || []) ===
+            JSON.stringify(b.destination_ips || []) &&
+          a.description === b.description
+        );
+      };
+
+      const exists = existingRules.some((rule: any) =>
+        isSameRule(rule, newRule)
+      );
+      const updatedRules = exists ? existingRules : [...existingRules, newRule];
 
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
@@ -218,10 +240,11 @@ export class GeneralStore {
       } else {
         this.onSetErrors("Failed to submit firewall rules");
       }
-    } catch (err: any) {
-      if (err.response?.data) {
-        this.onSetErrors(err.response.data);
-      } else {
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as AxiosError;
+        this.onSetErrors(axiosErr.response?.data || "Unknown error occurred");
+      } else if (err instanceof Error) {
         this.onSetErrors(err.message || "Unknown error occurred");
       }
     }
@@ -238,10 +261,7 @@ export class GeneralStore {
         duration: fw.duration,
         requestedBy: fw.requestedBy,
         approved: false,
-        //CreatedAt: fw.created ?? new Date().toISOString(),
       };
-
-      console.log("Sending payload:", JSON.stringify(payload, null, 2));
 
       const response: AxiosResponse = yield callApiBpmnServicePost(
         `${ENV.NEXT_PUBLIC_BPMN_GET_PROCESS_DEFINITION}/key/FirewallRequestStatusUpdate/start`,
@@ -314,7 +334,6 @@ export class GeneralStore {
       // columns[1][include]=true&columns[2][name]=Status&columns[2][include]=true&columns[3][name]=WorkflowData&
       // columns[3][include]=true&columns[4][name]=Name&columns[4][searchable]=true&columns[4][search][value]=FirewallRequestStatusUpdate&
       // columns[4][search][regex]=false&order[0][column]=0&order[0][dir]=desc
-
 
       if (response.status === 200) {
         this.loadingProcessInstances = false;
@@ -415,7 +434,7 @@ export class GeneralStore {
     }
   }
 
-  *getFirewalls(payload: any) {
+  *getFirewalls() {
     try {
       this.onSetErrors(null);
       this.loadingFirewalls = true;
@@ -458,9 +477,6 @@ export class GeneralStore {
         Name: fw.name ?? "",
         Labels: fw.labels ?? "",
       };
-
-      console.log("Sending payload:", JSON.stringify(payload, null, 2));
-
       const response: AxiosResponse = yield callApiPost(
         ENV.NEXT_PUBLIC_CREATE_FIREWALL_REQUEST,
         payload
@@ -522,11 +538,61 @@ export class GeneralStore {
           } catch (error) {}
           //clearStorage();
           signOut();
+        } else if (err.response.status === 404) {
+          // User not found, create a new user
+          try {
+            this.loadingUser = true;
+            const createResponse: AxiosResponse = yield callApiPost(
+              ENV.NEXT_PUBLIC_CREATE_USER,
+              { userDto: { azureAdId } }
+            );
+
+            if (
+              createResponse.status === 200 ||
+              createResponse.status === 201
+            ) {
+              this.loadingUser = false;
+              this.user = createResponse.data;
+            }
+          } catch (createErr: any) {
+            this.loadingUser = false;
+            this.onSetErrors(createErr.response?.data || createErr.message);
+          }
         } else {
           this.onSetErrors(err.response.data);
         }
       } else if (err.message) {
         this.onSetErrors(err.message);
+      }
+    }
+  }
+  *createUserWithData(userData: UserDTO) {
+    try {
+      this.onSetErrors(null);
+      this.loadingUser = true;
+
+      const response: AxiosResponse = yield callApiPost(
+        ENV.NEXT_PUBLIC_CREATE_USER,
+        { userDto: userData }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        this.user = response.data;
+        console.log("User created successfully:", response.data);
+      } else {
+        this.onSetErrors("Failed to create user");
+      }
+
+      this.loadingUser = false;
+    } catch (err: any) {
+      this.loadingUser = false;
+
+      if (err.response && err.response.data) {
+        this.onSetErrors(err.response.data);
+      } else if (err.message) {
+        this.onSetErrors(err.message);
+      } else {
+        this.onSetErrors("Unknown error occurred while creating user");
       }
     }
   }
