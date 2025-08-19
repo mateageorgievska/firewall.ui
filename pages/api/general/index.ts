@@ -206,26 +206,8 @@ export class GeneralStore {
         port: "80",
         description: "Temporary access to firewall",
       };
-
-      const isSameRule = (a: any, b: any) => {
-        return (
-          a.direction === b.direction &&
-          a.protocol === b.protocol &&
-          a.port === b.port &&
-          // source_ips
-          JSON.stringify(a.source_ips || []) ===
-            JSON.stringify(b.source_ips || []) &&
-          // destination_ips
-          JSON.stringify(a.destination_ips || []) ===
-            JSON.stringify(b.destination_ips || []) &&
-          a.description === b.description
-        );
-      };
-
-      const exists = existingRules.some((rule: any) =>
-        isSameRule(rule, newRule)
-      );
-      const updatedRules = exists ? existingRules : [...existingRules, newRule];
+      
+      const updatedRules = [...existingRules, newRule];
 
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,

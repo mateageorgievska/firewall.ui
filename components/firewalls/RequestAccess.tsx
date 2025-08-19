@@ -80,26 +80,24 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
           wfData === undefined
         ) {
           continue;
-        } else {
+        }
+        if (
+          instanceFirewallId === firewallId &&
+          instancePublicIp === publicIp
+        ) {
           matchedDetailedInstance = detailedInstance;
           break;
         }
       }
 
-      if (!matchedDetailedInstance) {
-        console.warn(
-          "No matching process instance found for:",
-          firewallId,
-          publicIp
+      if (matchedDetailedInstance) {
+        //firewall rules
+        await generalStore.postFirewallRules(
+          matchedDetailedInstance?.workflowData.firewall.data.firewallId,
+          matchedDetailedInstance?.workflowData.firewall.data.publicIp,
+          matchedDetailedInstance?.workflowData.firewall.data.duration
         );
-        return;
       }
-      //firewall rules
-      await generalStore.postFirewallRules(
-        firewallId,
-        publicIp,
-        matchedDetailedInstance.workflowData.firewall.data.duration
-      );
     } catch (error) {
       console.error("Error in handleProcessInstance:", error);
     }
