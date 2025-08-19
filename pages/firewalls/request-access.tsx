@@ -5,6 +5,7 @@ import RequestAccess from "@/components/firewalls/RequestAccess";
 import { injectIntl, IntlShape } from "react-intl";
 import { observer } from "mobx-react-lite";
 import { FirewallSelection } from "@/interfaces/Firewall";
+import { useSession } from "next-auth/react";
 
 interface Props {
   intl: IntlShape;
@@ -12,13 +13,23 @@ interface Props {
 
 const RequestAccessPage: React.FC<Props> = observer(({ intl }) => {
   const { generalStore } = useStore();
+  const { data: session } = useSession();
+
   const handleSubmit = (selectedFirewalls: FirewallSelection[]) => {
     generalStore.startFirewallProcess(selectedFirewalls);
   };
 
   useEffect(() => {
-    generalStore.getFirewalls({});
-  }, []);
+    generalStore.getFirewalls();
+
+    if (session?.user?.azureAdId) {
+      generalStore.createUserWithData({
+        azureAdId: session.user.azureAdId,
+        email: session.user.email ?? '',
+        roles: ["User"],
+      });
+    }
+  }, [generalStore, session]);
 
   return (
     <AppLayout

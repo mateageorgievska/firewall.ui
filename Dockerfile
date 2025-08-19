@@ -21,13 +21,17 @@ RUN npm run build
 
 FROM node:18-alpine
 
+# Set environment variables for production
+ENV NODE_ENV=production
+ENV PORT=3050
+
 # copy from build image
 COPY --from=build_image /app/.env .env
 COPY --from=build_image /app/.next/standalone ./
 COPY --from=build_image /app/.next/static ./.next/static
 COPY --from=build_image /app/public ./public
 
-EXPOSE 3000
+EXPOSE 3050
 
 CMD [ "node", "server.js" ]
 
