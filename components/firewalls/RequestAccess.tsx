@@ -165,6 +165,12 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                   >
                     Select
                   </th>
+                   <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-s font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Firewall ID
+                  </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-s text-gray-500 uppercase tracking-wider"
@@ -197,6 +203,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                           handleChange(idx, "selected", e.target.checked)
                         }
                       />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {fw.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {fw.name}

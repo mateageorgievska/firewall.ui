@@ -174,9 +174,7 @@ export class GeneralStore {
       const newRules = existingRules
         .map((rule: HetznerRule) => ({
           ...rule,
-          source_ips: rule.source_ips.filter(
-            (ip) => !(ip.startsWith(publicIp))
-          ),
+          source_ips: rule.source_ips.filter((ip) => !ip.startsWith(publicIp)),
         }))
         .filter((rule: HetznerRule) => rule.source_ips.length > 0);
 
@@ -220,11 +218,24 @@ export class GeneralStore {
           source_ips: rule.source_ips,
         }));
 
+      const firewallName = getResp.data.firewall.name?.toLowerCase() || "";
+      const portMappings: Record<string, string> = {
+        sql: "1433",
+      };
+
+      let port = "80"; 
+      for (const keyword in portMappings) {
+        if (firewallName.includes(keyword)) {
+          port = portMappings[keyword];
+          break;
+        }
+      }
+
       const newRule = {
         direction: "in",
         source_ips: [`${publicIp}/32`],
         protocol: "tcp",
-        port: "80",
+        port,
         description: "Temporary access to firewall",
       };
 
