@@ -27,6 +27,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
     return ipRegex.test(ip);
   };
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [publicIp, setPublicIp] = useState("");
   const [duration, setDuration] = useState("1_day");
   const payloadProcessInstance = {
@@ -120,9 +121,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     field: keyof FirewallSelection,
     value: string | boolean
   ) => {
-  const updated = [...selections];
-  // @ts-expect-error: dynamic key assignment to FirewallSelection type
-  updated[index][field] = value;
+    const updated = [...selections];
+    // @ts-expect-error: dynamic key assignment to FirewallSelection type
+    updated[index][field] = value;
 
     if (field === "selected" && value === true) {
       setPublicIp(updated[index].publicIp);
@@ -137,6 +138,11 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       .filter((s) => s.selected && s.publicIp)
       .map((s) => ({ ...s }));
     onSubmit(selected);
+
+    if (selected.length === 0) {
+      setErrorMessage("Please select a firewall.");
+      return;
+    }
 
     selected.forEach((sel) => {
       //handleProcessInstance(sel.id, sel.publicIp, true);
@@ -262,6 +268,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
             Submit Request
           </button>
         </div>
+        {errorMessage && (
+          <p className="text-red-600 text-center mt-4">{errorMessage}</p>
+        )}
       </div>
     </div>
   );
