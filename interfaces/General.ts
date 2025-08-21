@@ -69,4 +69,14 @@ export interface ProcessInstanceDTO {
   httpStatusCode: number;
 }
 
+export interface HetznerRule {
+  direction: "in" | "out";
+  protocol: string;
+  port?: string | number | null;
+  description?: string;
+  source_ips: string[];
+  destination_ips?: string[];
+}
+
+
 
