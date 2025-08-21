@@ -17,7 +17,11 @@ import {
   callApiPut,
 } from "../axiosCalls";
 import { signOut } from "next-auth/react";
-import { ProcessInstanceDTO, UserTaskDTO } from "@/interfaces/General";
+import {
+  HetznerRule,
+  ProcessInstanceDTO,
+  UserTaskDTO,
+} from "@/interfaces/General";
 import qs from "qs";
 
 export interface OptionType {
@@ -167,10 +171,15 @@ export class GeneralStore {
       //get existing rules
       const existingRules = getResp.data.firewall.rules || [];
 
-      const newRules = existingRules.filter(
-        (rule: { source_ips: string[] }) =>
-          !rule.source_ips.includes(`${publicIp}/32`)
-      );
+      const newRules = existingRules
+        .map((rule: HetznerRule) => ({
+          ...rule,
+          source_ips: rule.source_ips.filter(
+            (ip) => !(ip.startsWith(publicIp))
+          ),
+        }))
+        .filter((rule: HetznerRule) => rule.source_ips.length > 0);
+
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
         { rules: newRules }
@@ -199,6 +208,18 @@ export class GeneralStore {
       );
       const existingRules = getResp.data.firewall.rules || [];
 
+      const normalizedRules = existingRules
+        .filter(
+          (rule: HetznerRule) => rule.source_ips && rule.source_ips.length > 0
+        )
+        .map((rule: HetznerRule) => ({
+          direction: rule.direction ?? "in",
+          protocol: rule.protocol ?? "tcp",
+          port: rule.port ? String(rule.port) : null,
+          description: rule.description ?? "",
+          source_ips: rule.source_ips,
+        }));
+
       const newRule = {
         direction: "in",
         source_ips: [`${publicIp}/32`],
@@ -206,8 +227,8 @@ export class GeneralStore {
         port: "80",
         description: "Temporary access to firewall",
       };
-      
-      const updatedRules = [...existingRules, newRule];
+
+      const updatedRules = [...normalizedRules, newRule];
 
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
