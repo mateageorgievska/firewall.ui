@@ -53,7 +53,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
 
   const handleProcessInstance = async (
     firewallId: number,
-    publicIp: string
+    publicIp: string,
   ) => {
     try {
       await generalStore.getProcessInstances(payloadProcessInstance);
@@ -96,7 +96,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
         await generalStore.postFirewallRules(
           matchedDetailedInstance?.workflowData.firewall.data.firewallId,
           matchedDetailedInstance?.workflowData.firewall.data.publicIp,
-          matchedDetailedInstance?.workflowData.firewall.data.duration
+          matchedDetailedInstance?.workflowData.firewall.data.duration,
         );
       }
     } catch (error) {
@@ -109,31 +109,31 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       firewalls.map((fw) => ({
         ...fw,
         selected: false,
-        publicIp: publicIp,
-        duration: duration,
+        publicIp: "",
+        duration: "1_day",
         requestedBy: session?.user?.email ?? "",
-      }))
+      })),
     );
-  }, [firewalls, session, publicIp, duration]);
+  }, [firewalls, session]);
 
   const handleChange = (
     index: number,
     field: keyof FirewallSelection,
-    value: string | boolean
+    value: string | boolean,
   ) => {
     const updated = [...selections];
     // @ts-expect-error: dynamic key assignment to FirewallSelection type
     updated[index][field] = value;
 
     if (field === "selected" && value === true) {
-      setPublicIp(updated[index].publicIp);
-      setDuration(updated[index].duration);
+      updated[index].publicIp = publicIp;
+      updated[index].duration = duration;
     }
 
     setSelections(updated);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const selected = selections
       .filter((s) => s.selected && s.publicIp)
       .map((s) => ({ ...s }));
@@ -144,11 +144,29 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       return;
     }
 
-    selected.forEach((sel) => {
-      //handleProcessInstance(sel.id, sel.publicIp, true);
-      handleProcessInstance(sel.id, sel.publicIp);
-    });
-    router.push("/firewalls/requests");
+    try {
+      await Promise.all(
+        selected.map((sel) => handleProcessInstance(sel.id, sel.publicIp)),
+      );
+
+      onSubmit(selected);
+
+      setPublicIp("");
+      setDuration("1_day");
+      setSelections(
+        selections.map((s) => ({
+          ...s,
+          selected: false,
+          publicIp: "",
+          duration: "1_day",
+        })),
+      );
+
+      router.push("/firewalls/requests");
+    } catch (error) {
+      console.error("Error submitting firewall requests:", error);
+      setErrorMessage("Failed to submit firewall requests. Please try again.");
+    }
   };
 
   return (
@@ -165,7 +183,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                   >
                     Select
                   </th>
-                   <th
+                  <th
                     scope="col"
                     className="px-6 py-3 text-left text-s font-medium text-gray-500 uppercase tracking-wider"
                   >
@@ -238,7 +256,13 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
             className="border rounded text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 w-64 bg-gray-100 block"
             placeholder="Enter your IP address..."
             value={publicIp}
-            onChange={(e) => setPublicIp(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPublicIp(value);
+              setSelections((prev) =>
+                prev.map((s) => (s.selected ? { ...s, publicIp: value } : s)),
+              );
+            }}
             required
           />
           <p
@@ -259,7 +283,13 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
           <select
             className="rounded border border-gray-300 px-4 py-1.5 w-64 text-gray-600 bg-gray-100"
             value={duration}
-            onChange={(e) => setDuration(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setDuration(value);
+              setSelections((prev) =>
+                prev.map((s) => (s.selected ? { ...s, duration: value } : s)),
+              );
+            }}
             required
           >
             <option value="1_day">1 Day</option>
