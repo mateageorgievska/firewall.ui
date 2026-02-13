@@ -24,7 +24,7 @@ const Requests: React.FC = observer(() => {
       pageIndex: 0,
       pageSize: 10,
     }),
-    [pageIndex, pageSize]
+    []
   );
 
   useEffect(() => {
@@ -39,7 +39,6 @@ const Requests: React.FC = observer(() => {
     generalStore.getRequests(payload);
   }, [pageIndex, pageSize, filters, generalStore]);
 
-  //const columns = useRequestsColumns(intl, router, generalStore.completeUserTask.bind(generalStore));
   const columns = useRequestsColumns(intl, router);
 
   const onSearch = () => {
@@ -49,30 +48,54 @@ const Requests: React.FC = observer(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-
   return (
     <Fragment>
-      <div className="">
+      <div className="min-h-screen bg-gray-50 p-6">
         {requests && !loadingRequests ? (
           <Fragment>
-            <div className="mb-4 p-2">
-              <Filter onSearch={onSearch} />
+            {/* Header with title and filter */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold text-gray-800 mb-4">Access Requests</h1>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <Filter onSearch={onSearch} />
+              </div>
             </div>
-            <div className="p-2">
-              <ServerPagination
-                columns={columns}
-                data={requests?.data ?? []}
-                pagination={{
-                  pageSize: pagination.pageSize,
-                  pageIndex: pagination.pageIndex + 1,
-                }}
-                setPagination={setPagination}
-                totalRecords={requests.totalRecords}
-              />
+
+            {/* Table section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-gray-700">
+                    Request List
+                  </h2>
+                  <span className="text-xs text-gray-500">
+                    Total: {requests?.totalRecords || 0}
+                  </span>
+                </div>
+              </div>
+              <div className="p-4">
+                <ServerPagination
+                  columns={columns}
+                  data={requests?.data ?? []}
+                  pagination={{
+                    pageSize: pagination.pageSize,
+                    pageIndex: pagination.pageIndex + 1,
+                  }}
+                  setPagination={setPagination}
+                  totalRecords={requests.totalRecords}
+                />
+              </div>
             </div>
           </Fragment>
         ) : (
-          loadingRequests
+          loadingRequests && (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                <p className="text-gray-600">Loading requests...</p>
+              </div>
+            </div>
+          )
         )}
       </div>
     </Fragment>
