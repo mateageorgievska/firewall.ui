@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import NextAuth from "next-auth/next";
 import AzureADProvider, { AzureADProfile } from "next-auth/providers/azure-ad";
 import type { JWT } from "next-auth/jwt";

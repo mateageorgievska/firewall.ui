@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 import Select, { StylesConfig } from 'react-select'
 import { Option } from '../../../interfaces/Classifier'

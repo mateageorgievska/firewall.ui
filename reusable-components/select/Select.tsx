@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import { useContext } from 'react'
 import Select from 'react-select'
 import classnames from 'classnames'

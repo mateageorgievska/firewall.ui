@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ColumnDef,
   FilterFn,
@@ -78,7 +79,7 @@ export const ServerPagination: React.FC<ServerPaginationProps> = (props) => {
   } = props;
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const table = useReactTable({
+  const table = useReactTable<any>({
     data,
     columns,
     pageCount: Math.ceil(totalRecords / pagination.pageSize),
