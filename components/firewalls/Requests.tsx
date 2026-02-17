@@ -1,7 +1,7 @@
 import { useStore } from "@/hooks/StoreHook";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import { PaginationState } from "@tanstack/react-table";
 import { useRequestsColumns } from "@/hooks/RequestsHook";
