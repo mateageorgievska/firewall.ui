@@ -199,7 +199,7 @@ export class GeneralStore {
     }
   }
 
-  *postFirewallRules(firewallId: number, publicIp: string, duration: string) {
+  *postFirewallRules(firewallId: number, publicIp: string, duration: string, port: string, user: string) {
     try {
       this.onSetErrors(null);
       const getResp: AxiosResponse = yield callApiHetznerServiceGet(
@@ -219,25 +219,12 @@ export class GeneralStore {
           source_ips: rule.source_ips,
         }));
 
-      const firewallName = getResp.data.firewall.name?.toLowerCase() || "";
-      const portMappings: Record<string, string> = {
-        sql: "1433",
-      };
-
-      let port = "80"; 
-      for (const keyword in portMappings) {
-        if (firewallName.includes(keyword)) {
-          port = portMappings[keyword];
-          break;
-        }
-      }
-
       const newRule = {
         direction: "in",
         source_ips: [`${publicIp}/32`],
         protocol: "tcp",
         port,
-        description: "Temporary access to firewall",
+        description: "Access for user " + user,
       };
 
       const updatedRules = [...normalizedRules, newRule];
