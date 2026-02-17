@@ -214,7 +214,7 @@ export class GeneralStore {
         .map((rule: HetznerRule) => ({
           direction: rule.direction ?? "in",
           protocol: rule.protocol ?? "tcp",
-          port: rule.port ? String(rule.port) : null,
+          port: rule.port ? String(rule.port) : "any",
           description: rule.description ?? "",
           source_ips: rule.source_ips,
         }));
@@ -223,11 +223,12 @@ export class GeneralStore {
         direction: "in",
         source_ips: [`${publicIp}/32`],
         protocol: "tcp",
-        port,
+        port: String(port),
         description: "Access for user " + user,
       };
 
       const updatedRules = [...normalizedRules, newRule];
+      console.log("Updated rules:", updatedRules);
 
       const response: AxiosResponse = yield callApiHetznerServicePost(
         `${firewallId}/actions/set_rules`,
