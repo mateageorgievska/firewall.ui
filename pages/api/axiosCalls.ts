@@ -144,8 +144,6 @@ export async function callApiBpmnServicePost(
 export async function callApiHetznerServiceGet(
   path: string
 ): Promise<AxiosResponse> {
-  //const session: Session | null = await getSession();
-  const token = ENV.NEXT_PUBLIC_HETZNER_API_TOKEN;
   const headers = {
     Authorization: `Bearer ${HETZNER_TOKEN}`,
   };
@@ -159,8 +157,6 @@ export async function callApiHetznerServicePost(
   payload: any,
   config?: AxiosRequestConfig
 ): Promise<AxiosResponse> {
-   console.log("token: ", HETZNER_TOKEN);
-  // const session: Session | null = await getSession();
   const defaultHeaders = {
     Authorization: `Bearer ${HETZNER_TOKEN}`,
     "Content-Type": "application/json",

@@ -19,13 +19,6 @@ const Requests: React.FC = observer(() => {
   });
   
   const [filters, setFilters] = useState<{ requestStatusId?: number }>({});
-  const pagination = useMemo(
-    () => ({
-      pageIndex: 0,
-      pageSize: 10,
-    }),
-    []
-  );
 
   useEffect(() => {
     const payload = {
@@ -78,8 +71,8 @@ const Requests: React.FC = observer(() => {
                   columns={columns}
                   data={requests?.data ?? []}
                   pagination={{
-                    pageSize: pagination.pageSize,
-                    pageIndex: pagination.pageIndex + 1,
+                    pageSize: pageSize,
+                    pageIndex: pageIndex + 1,
                   }}
                   setPagination={setPagination}
                   totalRecords={requests.totalRecords}

@@ -25,6 +25,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [publicIp, setPublicIp] = useState("");
   const [duration, setDuration] = useState("1_day");
+  const [port, setPort] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectAll, setSelectAll] = useState(false);
@@ -56,7 +57,12 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     "order[0][dir]": "desc",
   };
 
-  const handleProcessInstance = async (firewallId: number, publicIp: string) => {
+  const handleProcessInstance = async (
+    firewallId: number,
+    publicIp: string,
+    port: string,
+    user: string,
+  ) => {
     try {
       await generalStore.getProcessInstances(payloadProcessInstance);
 
@@ -94,10 +100,22 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       }
 
       if (matchedDetailedInstance) {
+        const firewallData =
+          matchedDetailedInstance?.workflowData?.firewall?.data;
+        if (!firewallData?.firewallId || !firewallData?.publicIp) {
+          console.warn("Workflow data not ready yet");
+          setErrorMessage(
+            "The request is still being processed. Please try again in a few seconds.",
+          );
+          return;
+        }
+
         await generalStore.postFirewallRules(
-          matchedDetailedInstance?.workflowData.firewall.data.firewallId,
-          matchedDetailedInstance?.workflowData.firewall.data.publicIp,
-          matchedDetailedInstance?.workflowData.firewall.data.duration,
+          matchedDetailedInstance?.workflowData?.firewall?.data?.firewallId,
+          matchedDetailedInstance?.workflowData?.firewall?.data?.publicIp,
+          matchedDetailedInstance?.workflowData?.firewall?.data?.duration,
+          port,
+          user,
         );
       }
     } catch (error) {
@@ -132,22 +150,22 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     }
 
     setSelections(updated);
-    setSelectAll(updated.every(s => s.selected));
+    setSelectAll(updated.every((s) => s.selected));
   };
 
   const handleSelectAll = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
-    const updated = selections.map(s => ({
+    const updated = selections.map((s) => ({
       ...s,
       selected: newSelectAll,
       publicIp: newSelectAll ? publicIp : s.publicIp,
-      duration: newSelectAll ? duration : s.duration
+      duration: newSelectAll ? duration : s.duration,
     }));
     setSelections(updated);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (port: string) => {
     if (submitting) return;
     setSubmitting(true);
 
@@ -156,27 +174,39 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       .map((s) => ({ ...s }));
 
     if (selected.length === 0) {
-      setErrorMessage("Please select at least one firewall and enter a public IP address.");
+      setErrorMessage(
+        "Please select at least one firewall and enter a public IP address.",
+      );
       setSubmitting(false);
       return;
     }
 
-    const invalidIpSelected = selected.some(s => !isValidIp(s.publicIp));
+    const invalidIpSelected = selected.some((s) => !isValidIp(s.publicIp));
     if (invalidIpSelected) {
-      setErrorMessage("Please enter a valid public IP address for all selected firewalls.");
+      setErrorMessage(
+        "Please enter a valid public IP address for all selected firewalls.",
+      );
+      setSubmitting(false);
+      return;
+    }
+    if (!port) {
+      setErrorMessage("Please select a port.");
       setSubmitting(false);
       return;
     }
 
     try {
       await Promise.all(
-        selected.map((sel) => handleProcessInstance(sel.id, sel.publicIp)),
+        selected.map((sel) =>
+          handleProcessInstance(sel.id, sel.publicIp, port, sel.requestedBy),
+        ),
       );
 
       onSubmit(selected);
 
       setPublicIp("");
       setDuration("1_day");
+      setPort("");
       setSearchTerm("");
       setSelectAll(false);
       setSelections((prev) =>
@@ -197,9 +227,10 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     }
   };
 
-  const filteredSelections = selections.filter(fw =>
-    fw.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fw.id.toString().includes(searchTerm)
+  const filteredSelections = selections.filter(
+    (fw) =>
+      fw.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fw.id.toString().includes(searchTerm),
   );
 
   return (
@@ -212,7 +243,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
               <div className="bg-blue-600 p-2 rounded-lg">
                 <span className="text-white font-bold text-xl">🛡️</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Firewall Access Request</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Firewall Access Request
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
@@ -230,7 +263,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              🔍
+            </span>
             <input
               type="text"
               placeholder="Search firewalls by name or ID..."
@@ -261,26 +296,38 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                       </span>
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Firewall ID
                   </th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Name
                   </th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th
+                    scope="col"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell"
+                  >
                     Labels
                   </th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th
+                    scope="col"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell"
+                  >
                     Created
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSelections.map((fw) => (
-                  <tr 
-                    key={fw.id} 
+                  <tr
+                    key={fw.id}
                     className={`hover:bg-gray-50 transition-colors duration-150 ${
-                      fw.selected ? 'bg-blue-50' : ''
+                      fw.selected ? "bg-blue-50" : ""
                     }`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -289,7 +336,11 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         checked={fw.selected}
                         onChange={(e) =>
-                          handleChange(selections.indexOf(fw), "selected", e.target.checked)
+                          handleChange(
+                            selections.indexOf(fw),
+                            "selected",
+                            e.target.checked,
+                          )
                         }
                       />
                     </td>
@@ -315,20 +366,25 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                       <span className="text-sm text-gray-500">
-                        {fw.created ? format(new Date(fw.created), "dd MMM yyyy") : "-"}
+                        {fw.created
+                          ? format(new Date(fw.created), "dd MMM yyyy")
+                          : "-"}
                       </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            
+
             {filteredSelections.length === 0 && (
               <div className="text-center py-12">
                 <span className="text-4xl mb-4 block">🛡️</span>
-                <h3 className="text-sm font-medium text-gray-900">No firewalls found</h3>
+                <h3 className="text-sm font-medium text-gray-900">
+                  No firewalls found
+                </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Try adjusting your search to find what you&apos;re looking for.
+                  Try adjusting your search to find what you&apos;re looking
+                  for.
                 </p>
               </div>
             )}
@@ -348,8 +404,8 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                     type="text"
                     className={`block w-full px-4 py-2 border ${
                       publicIp && !isValidIp(publicIp)
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     } rounded-lg shadow-sm bg-white`}
                     placeholder="e.g., 192.168.1.1"
                     value={publicIp}
@@ -357,7 +413,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                       const value = e.target.value;
                       setPublicIp(value);
                       setSelections((prev) =>
-                        prev.map((s) => (s.selected ? { ...s, publicIp: value } : s)),
+                        prev.map((s) =>
+                          s.selected ? { ...s, publicIp: value } : s,
+                        ),
                       );
                     }}
                   />
@@ -388,7 +446,9 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                     const value = e.target.value;
                     setDuration(value);
                     setSelections((prev) =>
-                      prev.map((s) => (s.selected ? { ...s, duration: value } : s)),
+                      prev.map((s) =>
+                        s.selected ? { ...s, duration: value } : s,
+                      ),
                     );
                   }}
                 >
@@ -397,26 +457,47 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                 </select>
               </div>
 
-              {/* Submit Button */}
-              <div className="flex items-end">
-                <button
-                  disabled={submitting}
-                  onClick={handleSubmit}
-                  className="w-full inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+              {/* Port Select */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-medium text-gray-700">
+                  <span className="mr-2">🔌</span>
+                  Port Select
+                </label>
+                <select
+                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  value={port}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPort(value);
+                  }}
                 >
-                  {submitting ? (
-                    <>
-                      <span className="mr-2">⏳</span>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Submit Request
-                      <span className="ml-2">→</span>
-                    </>
-                  )}
-                </button>
+                  <option value="" hidden></option>
+                  <option value="1433">1433 - SQL Server</option>
+                  <option value="22">22 - SSH</option>
+                  <option value="9000">9000 - MinIO</option>
+                  <option value="9090">9090 - MinIO UI</option>
+                </select>
               </div>
+            </div>
+            {/* Submit Button */}
+            <div className="mt-6 flex justify-center">
+              <button
+                disabled={submitting}
+                onClick={() => handleSubmit(port)}
+                className="inline-flex items-center justify-center px-8 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+              >
+                {submitting ? (
+                  <>
+                    <span className="mr-2">⏳</span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Submit Request
+                    <span className="ml-2">→</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Error Message */}
@@ -430,10 +511,11 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
             )}
 
             {/* Selected Count */}
-            {selections.some(s => s.selected) && (
+            {selections.some((s) => s.selected) && (
               <div className="mt-4 flex items-center text-sm text-gray-600">
                 <span className="text-green-500 mr-2">✓</span>
-                {selections.filter(s => s.selected).length} firewall(s) selected
+                {selections.filter((s) => s.selected).length} firewall(s)
+                selected
               </div>
             )}
           </div>
@@ -443,18 +525,20 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <p className="text-sm text-gray-500">Total Firewalls</p>
-            <p className="text-2xl font-semibold text-gray-900">{firewalls.length}</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {firewalls.length}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <p className="text-sm text-gray-500">Selected</p>
             <p className="text-2xl font-semibold text-blue-600">
-              {selections.filter(s => s.selected).length}
+              {selections.filter((s) => s.selected).length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <p className="text-sm text-gray-500">Available</p>
             <p className="text-2xl font-semibold text-green-600">
-              {firewalls.length - selections.filter(s => s.selected).length}
+              {firewalls.length - selections.filter((s) => s.selected).length}
             </p>
           </div>
         </div>
