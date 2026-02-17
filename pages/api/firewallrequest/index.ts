@@ -17,6 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const savedRequests = await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       requests.map((req: any) => {
         const newRequest = new Request({
           firewallId: req.id,

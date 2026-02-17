@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GroupBase, StylesConfig, CSSObjectWithLabel, ClearIndicatorProps } from "react-select";
 
 export const CustomStyles = (

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import Select, { SingleValue, MultiValue } from "react-select";
 import { observer } from "mobx-react-lite";

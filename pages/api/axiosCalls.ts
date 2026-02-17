@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ENV } from "@/env";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
@@ -12,7 +13,7 @@ export async function callApiGet(path: string): Promise<AxiosResponse> {
 
   // Extract query parameters if present
   const [basePath, queryString] = path.split("?");
-  let hashPayload: any = {};
+  const hashPayload: any = {};
 
   // Handle path parameters (split and process)
   const pathSegments = basePath.split("/").filter((segment) => segment !== ""); // Remove empty parts

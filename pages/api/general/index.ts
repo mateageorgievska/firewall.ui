@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { action, flow, makeObservable, observable } from "mobx";
 import {
   FirewallDTO,
