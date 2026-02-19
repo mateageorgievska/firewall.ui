@@ -202,37 +202,18 @@ export class GeneralStore {
   *postFirewallRules(firewallId: number, publicIp: string, duration: string, port: string, user: string) {
     try {
       this.onSetErrors(null);
-      const getResp: AxiosResponse = yield callApiHetznerServiceGet(
-        `${firewallId}`
-      );
-      const existingRules = getResp.data.firewall.rules || [];
+      const payload = {
+        firewallId: firewallId,
+        publicIp: publicIp,
+        duration: duration,
+        port: port,
+        user: user
+     }
+           console.log("payload from postFirewallRules:", payload);
 
-      const normalizedRules = existingRules
-        .filter(
-          (rule: HetznerRule) => rule.source_ips && rule.source_ips.length > 0
-        )
-        .map((rule: HetznerRule) => ({
-          direction: rule.direction ?? "in",
-          protocol: rule.protocol ?? "tcp",
-          port: rule.port ? String(rule.port) : "any",
-          description: rule.description ?? "",
-          source_ips: rule.source_ips,
-        }));
-
-      const newRule = {
-        direction: "in",
-        source_ips: [`${publicIp}/32`],
-        protocol: "tcp",
-        port: String(port),
-        description: "Access for user " + user,
-      };
-
-      const updatedRules = [...normalizedRules, newRule];
-      console.log("Updated rules:", updatedRules);
-
-      const response: AxiosResponse = yield callApiHetznerServicePost(
-        `${firewallId}/actions/set_rules`,
-        { rules: updatedRules }
+      const response: AxiosResponse = yield callApiPost(
+        `${ENV.NEXT_PUBLIC_EDIT_FIREWALL_RULES}/${firewallId}`,
+        payload
       );
 
       if (response.status === 201 || response.status === 200) {

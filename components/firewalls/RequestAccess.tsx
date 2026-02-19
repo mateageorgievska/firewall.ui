@@ -196,10 +196,20 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     }
 
     try {
+      // await Promise.all(
+      //   selected.map((sel) =>
+      //     handleProcessInstance(sel.id, sel.publicIp, port, sel.requestedBy),
+      //   ),
       await Promise.all(
         selected.map((sel) =>
-          handleProcessInstance(sel.id, sel.publicIp, port, sel.requestedBy),
-        ),
+          generalStore.postFirewallRules(
+            sel.id,
+            sel.publicIp,
+            sel.duration,
+            port,
+            sel.requestedBy
+          )
+        )
       );
 
       onSubmit(selected);
