@@ -28,7 +28,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
   const [port, setPort] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectAll, setSelectAll] = useState(false);
+  const [labelSelector, setLabelSelector] = useState<"DEV" | "UAT" | "PRD">("DEV");
 
   const isValidIp = (ip: string): boolean => {
     const ipRegex =
@@ -36,92 +36,92 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     return ipRegex.test(ip);
   };
 
-  const payloadProcessInstance = {
-    draw: 1,
-    start: 0,
-    length: 77,
-    collection: "WorkflowInstance",
-    "columns[0][name]": "_id",
-    "columns[0][include]": true,
-    "columns[1][name]": "Name",
-    "columns[1][include]": true,
-    "columns[2][name]": "Status",
-    "columns[2][include]": true,
-    "columns[3][name]": "WorkflowData",
-    "columns[3][include]": true,
-    "columns[4][name]": "Name",
-    "columns[4][searchable]": true,
-    "columns[4][search][value]": "FirewallRequestStatusUpdate",
-    "columns[4][search][regex]": false,
-    "order[0][column]": "0",
-    "order[0][dir]": "desc",
-  };
+  // const payloadProcessInstance = {
+  //   draw: 1,
+  //   start: 0,
+  //   length: 77,
+  //   collection: "WorkflowInstance",
+  //   "columns[0][name]": "_id",
+  //   "columns[0][include]": true,
+  //   "columns[1][name]": "Name",
+  //   "columns[1][include]": true,
+  //   "columns[2][name]": "Status",
+  //   "columns[2][include]": true,
+  //   "columns[3][name]": "WorkflowData",
+  //   "columns[3][include]": true,
+  //   "columns[4][name]": "Name",
+  //   "columns[4][searchable]": true,
+  //   "columns[4][search][value]": "FirewallRequestStatusUpdate",
+  //   "columns[4][search][regex]": false,
+  //   "order[0][column]": "0",
+  //   "order[0][dir]": "desc",
+  // };
 
-  const handleProcessInstance = async (
-    firewallId: number,
-    publicIp: string,
-    port: string,
-    user: string,
-  ) => {
-    try {
-      await generalStore.getProcessInstances(payloadProcessInstance);
+  // const handleProcessInstance = async (
+  //   firewallId: number,
+  //   publicIp: string,
+  //   port: string,
+  //   user: string,
+  // ) => {
+  //   try {
+  //     await generalStore.getProcessInstances(payloadProcessInstance);
 
-      let matchedDetailedInstance = null;
+  //     let matchedDetailedInstance = null;
 
-      for (const instance of generalStore.processInstances) {
-        await generalStore.getProcessInstanceById(instance._id);
-        const detailedInstance = generalStore.processInstance;
+  //     for (const instance of generalStore.processInstances) {
+  //       await generalStore.getProcessInstanceById(instance._id);
+  //       const detailedInstance = generalStore.processInstance;
 
-        if (!detailedInstance) {
-          continue;
-        }
+  //       if (!detailedInstance) {
+  //         continue;
+  //       }
 
-        const wfData = detailedInstance.workflowData;
+  //       const wfData = detailedInstance.workflowData;
 
-        const instanceFirewallId =
-          wfData.firewall?.data?.firewallId ?? wfData?.firewallId?.data;
-        const instancePublicIp =
-          wfData.firewall?.data?.publicIp ?? wfData?.publicIp?.data;
+  //       const instanceFirewallId =
+  //         wfData.firewall?.data?.firewallId ?? wfData?.firewallId?.data;
+  //       const instancePublicIp =
+  //         wfData.firewall?.data?.publicIp ?? wfData?.publicIp?.data;
 
-        if (
-          instanceFirewallId === undefined ||
-          instancePublicIp === undefined ||
-          wfData === undefined
-        ) {
-          continue;
-        }
-        if (
-          instanceFirewallId === firewallId &&
-          instancePublicIp === publicIp
-        ) {
-          matchedDetailedInstance = detailedInstance;
-          break;
-        }
-      }
+  //       if (
+  //         instanceFirewallId === undefined ||
+  //         instancePublicIp === undefined ||
+  //         wfData === undefined
+  //       ) {
+  //         continue;
+  //       }
+  //       if (
+  //         instanceFirewallId === firewallId &&
+  //         instancePublicIp === publicIp
+  //       ) {
+  //         matchedDetailedInstance = detailedInstance;
+  //         break;
+  //       }
+  //     }
 
-      if (matchedDetailedInstance) {
-        const firewallData =
-          matchedDetailedInstance?.workflowData?.firewall?.data;
-        if (!firewallData?.firewallId || !firewallData?.publicIp) {
-          console.warn("Workflow data not ready yet");
-          setErrorMessage(
-            "The request is still being processed. Please try again in a few seconds.",
-          );
-          return;
-        }
+  //     if (matchedDetailedInstance) {
+  //       const firewallData =
+  //         matchedDetailedInstance?.workflowData?.firewall?.data;
+  //       if (!firewallData?.firewallId || !firewallData?.publicIp) {
+  //         console.warn("Workflow data not ready yet");
+  //         setErrorMessage(
+  //           "The request is still being processed. Please try again in a few seconds.",
+  //         );
+  //         return;
+  //       }
 
-        await generalStore.postFirewallRules(
-          matchedDetailedInstance?.workflowData?.firewall?.data?.firewallId,
-          matchedDetailedInstance?.workflowData?.firewall?.data?.publicIp,
-          matchedDetailedInstance?.workflowData?.firewall?.data?.duration,
-          port,
-          user,
-        );
-      }
-    } catch (error) {
-      console.error("Error in handleProcessInstance:", error);
-    }
-  };
+  //       await generalStore.postFirewallRules(
+  //         matchedDetailedInstance?.workflowData?.firewall?.data?.firewallId,
+  //         matchedDetailedInstance?.workflowData?.firewall?.data?.publicIp,
+  //         matchedDetailedInstance?.workflowData?.firewall?.data?.duration,
+  //         port,
+  //         user,
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("Error in handleProcessInstance:", error);
+  //   }
+  // };
 
   useEffect(() => {
     setSelections(
@@ -135,35 +135,32 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
     );
   }, [firewalls, session]);
 
-  const handleChange = (
-    index: number,
-    field: keyof FirewallSelection,
-    value: string | boolean,
-  ) => {
-    const updated = [...selections];
-    // @ts-expect-error: dynamic key assignment to FirewallSelection type
-    updated[index][field] = value;
+const handleChange = (
+  index: number,
+  field: keyof FirewallSelection,
+  value: string | boolean
+) => {
+  let updated: FirewallSelection[];
 
-    if (field === "selected" && value === true) {
-      updated[index].publicIp = publicIp;
-      updated[index].duration = duration;
-    }
-
-    setSelections(updated);
-    setSelectAll(updated.every((s) => s.selected));
-  };
-
-  const handleSelectAll = () => {
-    const newSelectAll = !selectAll;
-    setSelectAll(newSelectAll);
-    const updated = selections.map((s) => ({
+  if (field === "selected" && value === true) {
+    updated = selections.map((s, i) => ({
       ...s,
-      selected: newSelectAll,
-      publicIp: newSelectAll ? publicIp : s.publicIp,
-      duration: newSelectAll ? duration : s.duration,
+      selected: i === index, 
+      publicIp: i === index ? publicIp : "",
+      duration: i === index ? duration : "1_day",
     }));
-    setSelections(updated);
-  };
+  } else if (field === "selected" && value === false) {
+    updated = selections.map((s, i) =>
+      i === index ? { ...s, selected: false, publicIp: "", duration: "1_day" } : s
+    );
+  } else {
+    updated = [...selections];
+    // @ts-expect-error dynamic key assignment
+    updated[index][field] = value;
+  }
+
+  setSelections(updated);
+};
 
   const handleSubmit = async (port: string) => {
     if (submitting) return;
@@ -207,9 +204,10 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
             sel.publicIp,
             sel.duration,
             port,
-            sel.requestedBy
-          )
-        )
+            sel.requestedBy,
+            labelSelector
+          ),
+        ),
       );
 
       onSubmit(selected);
@@ -217,8 +215,8 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
       setPublicIp("");
       setDuration("1_day");
       setPort("");
+      setLabelSelector("DEV");
       setSearchTerm("");
-      setSelectAll(false);
       setSelections((prev) =>
         prev.map((s) => ({
           ...s,
@@ -295,14 +293,8 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
                 <tr>
                   <th scope="col" className="px-6 py-4 text-left">
                     <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={selectAll}
-                        onChange={handleSelectAll}
-                      />
-                      <span className="ml-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Select All
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Select
                       </span>
                     </div>
                   </th>
@@ -400,95 +392,113 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
             )}
           </div>
 
-          {/* Input Section */}
-          <div className="border-t border-gray-200 bg-gray-50 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Public IP Input */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <span className="mr-2">🌐</span>
-                  Public IP Address
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className={`block w-full px-4 py-2 border ${
-                      publicIp && !isValidIp(publicIp)
-                        ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    } rounded-lg shadow-sm bg-white`}
-                    placeholder="e.g., 192.168.1.1"
-                    value={publicIp}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setPublicIp(value);
-                      setSelections((prev) =>
-                        prev.map((s) =>
-                          s.selected ? { ...s, publicIp: value } : s,
-                        ),
-                      );
-                    }}
-                  />
-                  {publicIp && !isValidIp(publicIp) && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <span className="text-red-500">⚠️</span>
-                    </div>
-                  )}
-                </div>
-                {publicIp && !isValidIp(publicIp) && (
-                  <p className="text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
-                    Invalid IP address format
-                  </p>
-                )}
-              </div>
+         {/* Input Section */}
+<div className="border-t border-gray-200 bg-gray-50 p-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    {/* Public IP Input */}
+    <div className="space-y-2">
+      <label className="flex items-center text-sm font-medium text-gray-700">
+        <span className="mr-2">🌐</span>
+        Public IP Address
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          className={`block w-full px-4 py-2 border ${
+            publicIp && !isValidIp(publicIp)
+              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+              : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+          } rounded-lg shadow-sm bg-white`}
+          placeholder="e.g., 192.168.1.1"
+          value={publicIp}
+          onChange={(e) => {
+            const value = e.target.value;
+            setPublicIp(value);
+            setSelections((prev) =>
+              prev.map((s) =>
+                s.selected ? { ...s, publicIp: value } : s
+              )
+            );
+          }}
+        />
+        {publicIp && !isValidIp(publicIp) && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <span className="text-red-500">⚠️</span>
+          </div>
+        )}
+      </div>
+      {publicIp && !isValidIp(publicIp) && (
+        <p className="text-sm text-red-600 flex items-center">
+          <span className="mr-1">⚠️</span>
+          Invalid IP address format
+        </p>
+      )}
+    </div>
 
-              {/* Duration Select */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <span className="mr-2">⏱️</span>
-                  Access Duration
-                </label>
-                <select
-                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  value={duration}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setDuration(value);
-                    setSelections((prev) =>
-                      prev.map((s) =>
-                        s.selected ? { ...s, duration: value } : s,
-                      ),
-                    );
-                  }}
-                >
-                  <option value="1_day">1 Day - Temporary Access</option>
-                  <option value="1_week">1 Week - Extended Access</option>
-                </select>
-              </div>
+    {/* Duration Select */}
+    <div className="space-y-2">
+      <label className="flex items-center text-sm font-medium text-gray-700">
+        <span className="mr-2">⏱️</span>
+        Access Duration
+      </label>
+      <select
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+        value={duration}
+        onChange={(e) => {
+          const value = e.target.value;
+          setDuration(value);
+          setSelections((prev) =>
+            prev.map((s) => (s.selected ? { ...s, duration: value } : s))
+          );
+        }}
+      >
+        <option value="1_day">1 Day - Temporary Access</option>
+        <option value="1_week">1 Week - Extended Access</option>
+      </select>
+    </div>
 
-              {/* Port Select */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <span className="mr-2">🔌</span>
-                  Port Select
-                </label>
-                <select
-                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  value={port}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setPort(value);
-                  }}
-                >
-                  <option value="" hidden></option>
-                  <option value="1433">1433 - SQL Server</option>
-                  <option value="22">22 - SSH</option>
-                  <option value="9000">9000 - MinIO</option>
-                  <option value="9090">9090 - MinIO UI</option>
-                </select>
-              </div>
-            </div>
+    {/* Port Select */}
+    <div className="space-y-2">
+      <label className="flex items-center text-sm font-medium text-gray-700">
+        <span className="mr-2">🔌</span>
+        Port Select
+      </label>
+      <select
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+        value={port}
+        onChange={(e) => {
+          const value = e.target.value;
+          setPort(value);
+        }}
+      >
+        <option value="" hidden></option>
+        <option value="1433">1433 - SQL Server</option>
+        <option value="22">22 - SSH</option>
+        <option value="9000">9000 - MinIO</option>
+        <option value="9090">9090 - MinIO UI</option>
+      </select>
+    </div>
+
+    {/* Environment Select */}
+    <div className="space-y-2">
+      <label className="flex items-center text-sm font-medium text-gray-700">
+        <span className="mr-2">🖥️</span>
+        Environment
+      </label>
+      <select
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+        value={labelSelector}
+        onChange={(e) =>
+          setLabelSelector(e.target.value as "DEV" | "UAT" | "PRD")
+        }
+      >
+        <option value="DEV">DEV</option>
+        <option value="UAT">UAT</option>
+        <option value="PRD">PRD</option>
+      </select>
+    </div>
+  </div>
+
             {/* Submit Button */}
             <div className="mt-6 flex justify-center">
               <button

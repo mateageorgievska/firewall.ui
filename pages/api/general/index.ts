@@ -199,7 +199,7 @@ export class GeneralStore {
     }
   }
 
-  *postFirewallRules(firewallId: number, publicIp: string, duration: string, port: string, user: string) {
+  *postFirewallRules(firewallId: number, publicIp: string, duration: string, port: string, user: string, labelSelector: string) {
     try {
       this.onSetErrors(null);
       const payload = {
@@ -207,7 +207,8 @@ export class GeneralStore {
         publicIp: publicIp,
         duration: duration,
         port: port,
-        user: user
+        user: user,
+        labelSelector: labelSelector
      }
            console.log("payload from postFirewallRules:", payload);
 

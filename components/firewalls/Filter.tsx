@@ -1,6 +1,6 @@
 import { useStore } from "../../hooks/StoreHook";
 import { observer } from "mobx-react-lite";
-import { FormattedMessage, IntlShape, injectIntl } from "react-intl";
+import { IntlShape, injectIntl } from "react-intl";
 import SelectBox from "../../reusable-components/SelectBox";
 import { RequestStatuses } from "../../utilities/firewalls/firewall";
 import { FiSearch } from "react-icons/fi";
