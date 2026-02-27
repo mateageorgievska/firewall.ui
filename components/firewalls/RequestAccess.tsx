@@ -28,7 +28,7 @@ const RequestAccess: React.FC<Props> = ({ firewalls, onSubmit }) => {
   const [port, setPort] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [labelSelector, setLabelSelector] = useState<"DEV" | "UAT" | "PRD">("DEV");
+  const { label, onSetLabel } = generalStore
 
   const isValidIp = (ip: string): boolean => {
     const ipRegex =
@@ -205,7 +205,7 @@ const handleChange = (
             sel.duration,
             port,
             sel.requestedBy,
-            labelSelector
+            label
           ),
         ),
       );
@@ -215,7 +215,7 @@ const handleChange = (
       setPublicIp("");
       setDuration("1_day");
       setPort("");
-      setLabelSelector("DEV");
+      onSetLabel("DEV");
       setSearchTerm("");
       setSelections((prev) =>
         prev.map((s) => ({
@@ -487,14 +487,12 @@ const handleChange = (
       </label>
       <select
         className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
-        value={labelSelector}
-        onChange={(e) =>
-          setLabelSelector(e.target.value as "DEV" | "UAT" | "PRD")
-        }
+        value={label}
+        onChange={(e) => onSetLabel(e.target.value as "DEV" | "UAT" | "PROD")}
       >
         <option value="DEV">DEV</option>
         <option value="UAT">UAT</option>
-        <option value="PRD">PRD</option>
+        <option value="PROD">PROD</option>
       </select>
     </div>
   </div>

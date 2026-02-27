@@ -62,6 +62,7 @@ export class GeneralStore {
   approvalTaskId: string | null = null;
   firstUserTaskId: any;
   processInfo: any;
+  label: string = 'DEV';
 
   constructor() {
     makeObservable(this, {
@@ -80,9 +81,11 @@ export class GeneralStore {
       loadingProcessInstance: observable,
       loadingProcessInstances: observable,
       loadingUserTask: observable,
+      label: observable,
       onSetActiveStep: action,
       onSetTotalSteps: action,
       onSetSelectedRequestStatus: action,
+      onSetLabel: action,
       getFirewalls: flow,
       getRequests: flow,
       getUser: flow,
@@ -120,6 +123,9 @@ export class GeneralStore {
   };
   onSetProcessInstance = (data: ProcessInstanceDTO) => {
     this.processInstance = data;
+  };
+  onSetLabel = (data: string) => {
+    this.label = data;
   };
 
   //schedule removal - duration of firewall rule
@@ -419,12 +425,13 @@ export class GeneralStore {
     }
   }
 
-  *getFirewalls() {
+  *getFirewalls(label?: string) {
     try {
       this.onSetErrors(null);
       this.loadingFirewalls = true;
+      this.onSetLabel (label || 'DEV');
       const response: AxiosResponse = yield callApiGet(
-        ENV.NEXT_PUBLIC_GET_FIREWALLS
+        `${ENV.NEXT_PUBLIC_GET_FIREWALLS}${label ? `?label=${label}` : ''}`
       );
 
       if (response.status === 200) {

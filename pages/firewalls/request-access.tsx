@@ -13,6 +13,7 @@ interface Props {
 
 const RequestAccessPage: React.FC<Props> = observer(({ intl }) => {
   const { generalStore } = useStore();
+  const {label} = generalStore;
   const { data: session } = useSession();
 
   const handleSubmit = (selectedFirewalls: FirewallSelection[]) => {
@@ -20,7 +21,7 @@ const RequestAccessPage: React.FC<Props> = observer(({ intl }) => {
   };
 
   useEffect(() => {
-    generalStore.getFirewalls();
+    generalStore.getFirewalls(label);
 
     if (session?.user?.azureAdId) {
       generalStore.createUserWithData({
@@ -29,7 +30,7 @@ const RequestAccessPage: React.FC<Props> = observer(({ intl }) => {
         roles: ["User"],
       });
     }
-  }, [generalStore, session]);
+  }, [generalStore, session, label]);
 
   return (
     <AppLayout
