@@ -476,6 +476,7 @@ const handleChange = (
         <option value="22">22 - SSH</option>
         <option value="9000">9000 - MinIO</option>
         <option value="9090">9090 - MinIO UI</option>
+        <option value="20777">20777 - MongoDB</option>
       </select>
     </div>
 
